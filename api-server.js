@@ -1,15 +1,16 @@
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const morgan = require("morgan");
 const helmet = require("helmet");
-const jwt = require("express-jwt");
-const jwksRsa = require("jwks-rsa");
 const authConfig = require("./src/auth_config.json");
+const checkJwt = require("./authentication/authenticate");
 
 const app = express();
 
 const port = process.env.API_PORT || 3001;
 const appPort = process.env.SERVER_PORT || 3000;
+// @ts-ignore
 const appOrigin = authConfig.appOrigin || `http://localhost:${appPort}`;
 
 if (
@@ -24,26 +25,27 @@ if (
   process.exit();
 }
 
+// Connect to Database
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://test1:test1@cluster0.mqih7.mongodb.net/covid-tracker?retryWrites=true&w=majority";
+if (MONGODB_URI)
+  mongoose
+    .connect(MONGODB_URI)
+    // @ts-ignore
+    .then((result) => console.log("MongoDB is now connected"))
+    .catch((err) => console.log(err));
+
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors({ origin: appOrigin }));
 
-const checkJwt = jwt({
-  secret: jwksRsa.expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: `https://${authConfig.domain}/.well-known/jwks.json`,
-  }),
-
-  audience: authConfig.audience,
-  issuer: `https://${authConfig.domain}/`,
-  algorithms: ["RS256"],
-});
+const user_routes = require("./api/user");
+app.use("/api/user", user_routes);
 
 app.get("/api/external", checkJwt, (req, res) => {
   res.send({
     msg: "Your access token was successfully validated!",
+    // @ts-ignore
+    user: req.user
   });
 });
 
