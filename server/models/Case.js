@@ -4,9 +4,15 @@ const CaseSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
     },
-    location: String,
+    latitude:{
+        type: Number,
+        required: true
+    },
+    longitude:{
+        type: Number,
+        required: true
+    },
     temperature: Number,
 });
 

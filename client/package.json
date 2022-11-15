@@ -10,8 +10,8 @@
     "spa": "react-scripts start",
     "server": "node server.js",
     "server:dev": "nodemon server.js",
-    "api-server": "node api-server.js",
-    "api-server:dev": "nodemon api-server.js",
+    "api-server": "node ../server/api-server.js",
+    "api-server:dev": "nodemon ../server/api-server.js",
     "dev": "npm-run-all --parallel spa api-server:dev",
     "prod": "npm-run-all --parallel server api-server"
   },

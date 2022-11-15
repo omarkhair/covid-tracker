@@ -1,6 +1,6 @@
-const jwt = require("express-jwt");
+var jwt = require("express-jwt");
 const jwksRsa = require("jwks-rsa");
-const authConfig = require("../src/auth_config.json");
+const authConfig = require("../../auth_config.json");
 
 module.exports = jwt({
     secret: jwksRsa.expressJwtSecret({
