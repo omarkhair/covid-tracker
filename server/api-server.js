@@ -25,13 +25,17 @@ if (MONGODB_URI)
     .then((result) => console.log("MongoDB is now connected"))
     .catch((err) => console.log(err));
 
+app.use(express.json());    
 app.use(morgan("dev"));
 // @ts-ignore
 app.use(helmet());
 app.use(cors({ origin: appOrigin }));
 
-const user_routes = require("./api/user");
-app.use("/api/user", user_routes);
+const userRoutes = require("./api/user");
+app.use("/api/user", userRoutes);
+
+const caseRoutes = require("./api/case");
+app.use("/api/case", caseRoutes);
 
 app.get("/api/external", checkJwt, (req, res) => {
   res.send({
