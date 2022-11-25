@@ -6,9 +6,11 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const authConfig = require("../auth_config.json");
 const checkJwt = require("./authentication/authenticate");
+const path = require('path')
+
 
 const app = express();
-dotenv.config();
+dotenv.config()
 
 const port = process.env.API_PORT || 3001;
 const appPort = process.env.SERVER_PORT || 3000;
@@ -18,8 +20,9 @@ const appOrigin = authConfig.appOrigin || `http://localhost:${appPort}`;
 
 // Connect to Database
 const MONGODB_URI = process.env.MONGODB_URI;
-if (MONGODB_URI)
-  mongoose
+console.log(MONGODB_URI)
+
+mongoose
     .connect(MONGODB_URI)
     // @ts-ignore
     .then((result) => console.log("MongoDB is now connected"))
@@ -31,8 +34,6 @@ app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors({ origin: appOrigin }));
 
-const userRoutes = require("./api/user");
-app.use("/api/user", userRoutes);
 
 const caseRoutes = require("./api/case");
 app.use("/api/case", caseRoutes);

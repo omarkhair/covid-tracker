@@ -19,7 +19,7 @@ router.post("/", authenticate, async (req, res)=>{
 router.get("/", async (req, res) => {
     try {
       const cases = await Case.find();
-      res.status(200).json(cases);
+      res.status(200).json([]);
     } catch (err) {
       res.status(500).json(err);
     }
