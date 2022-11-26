@@ -66,6 +66,22 @@ const CasesMap = () => {
       });
       setCases([...cases, res.data]);
       setNewCase(null);
+      setCurrentCaseId(res.data._id);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const removeCase = async (id) => {
+    try {
+      const token = await getAccessTokenSilently();
+      await axios.delete(`${apiOrigin}/api/case/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });      
+      setCases([...cases.filter((cur)=>cur._id !== id)]);
+      setCurrentCaseId(null);
     } catch (err) {
       console.log(err);
     }
@@ -95,7 +111,7 @@ const CasesMap = () => {
       mapboxAccessToken={process.env.REACT_APP_MAPBOX}
       style={{ width: "70vw", height: "65vh" }}
       mapStyle="mapbox://styles/mapbox/streets-v9"
-      onDblClick={user?.email && handleAddClick}      
+      onDblClick={user?.email && handleAddClick}
     >
       <>
         {cases.map((c) => (
@@ -133,12 +149,17 @@ const CasesMap = () => {
                   <label>Temperature</label>
                   <h4 className="place">{c.temperature}</h4>
                   <label>Severity</label>
-                  <p className="desc"><b>{c.severity}</b></p>
+                  <p className="desc">
+                    <b>{c.severity}</b>
+                  </p>
                   <label>Created by</label>
-                  <span className="username">
-                    {c.email}
-                  </span>
+                  <span className="username">{c.email}</span>
                   <span className="date">{format(c.createdAt)}</span>
+                {user?.email === c.email && (
+                  <button className="submitButton" onClick={()=>removeCase(c._id)}>
+                    Delete
+                  </button>
+                )}
                 </div>
               </Popup>
             )}
@@ -149,8 +170,6 @@ const CasesMap = () => {
             <Marker
               latitude={newCase.latitude}
               longitude={newCase.longitude}
-              offsetLeft={-3.5 * viewState.zoom}
-              offsetTop={-7 * viewState.zoom}
             >
               <Room
                 style={{
