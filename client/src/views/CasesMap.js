@@ -6,99 +6,196 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getConfig } from "../config";
 import axios from "axios";
+import { format } from "timeago.js";
 
 const CasesMap = () => {
   const [cases, setCases] = useState([]);
-  const [myLat, setMyLat] = useState(30);
-  const [myLong, setMyLong] = useState(30);
-  const [zoomAmount, setZoomAmount] = useState(5);
+  const [currentCaseId, setCurrentCaseId] = useState(null);
+  const [newCase, setNewCase] = useState(null);
+  const [temperature, setTemperature] = useState(37);
+  const [severity, setSeverity] = useState("Moderate");
+
   const { apiOrigin } = getConfig();
+  const [viewState, setViewState] = useState({
+    latitude: 50,
+    longitude: 40,
+    zoom: 5,
+  });
   // @ts-ignore
-  const { getAccessTokenSilently, loginWithPopup, getAccessTokenWithPopup } =
-    useAuth0();
+  const { getAccessTokenSilently, user } = useAuth0();
 
   const getCases = async () => {
     try {
-      const response = await axios.get(`${apiOrigin}/api/case`);     
-      console.log('a7a') 
+      const response = await axios.get(`${apiOrigin}/api/case`);
       setCases(response.data);
       console.log(response.data);
     } catch (error) {
       console.log(error);
     }
   };
+
+  const handleMarkerClick = (id, lat, lng) => {
+    setCurrentCaseId(id);
+    // setViewState({ ...viewState, latitude: lat, longitude: lng });
+  };
+
+  const handleAddClick = (e) => {
+    e.preventDefault();
+    const { lng, lat } = e.lngLat;
+    setNewCase({
+      latitude: lat,
+      longitude: lng,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const caseData = {
+      temperature: temperature,
+      severity: severity,
+      latitude: newCase?.latitude,
+      longitude: newCase?.longitude,
+    };
+
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await axios.post(`${apiOrigin}/api/case`, caseData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setCases([...cases, res.data]);
+      setNewCase(null);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
-      setMyLat(pos.coords.latitude);
-      setMyLong(pos.coords.longitude);
+      setViewState({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        zoom: 5,
+      });
     });
     getCases();
   }, []);
 
-  console.log(myLat);
-  console.log(myLong);
   return (
     <Map
-      initialViewState={{
-        longitude: myLong,
-        latitude: myLat,
-        zoom: zoomAmount,
+      initialViewState={viewState}
+      onZoom={(e) => {
+        setViewState(e.viewState);
       }}
-      onZoom={(viewState) => {
-        setZoomAmount(viewState.viewState.zoom);
+      onMove={(e) => {
+        setViewState(e.viewState);
       }}
+      viewState={viewState}
       mapboxAccessToken={process.env.REACT_APP_MAPBOX}
       style={{ width: "70vw", height: "65vh" }}
       mapStyle="mapbox://styles/mapbox/streets-v9"
+      onDblClick={user?.email && handleAddClick}      
     >
       <>
-        {cases.map(
-          (c) => (
+        {cases.map((c) => (
+          <>
             <Marker
               // @ts-ignore
               longitude={c.longitude}
               // @ts-ignore
               latitude={c.latitude}
               anchor="bottom"
+              // @ts-ignore
             >
               <Room
                 style={{
-                  fontSize: 7 * zoomAmount,
-                  color: "slateblue",
+                  fontSize: 7 * viewState.zoom,
+                  color: user?.email === c.email ? "tomato" : "slateblue",
+                  cursor: "pointer",
+                }}
+                onClick={() =>
+                  handleMarkerClick(c._id, c.latitude, c.longitude)
+                }
+              />
+            </Marker>
+            {c._id === currentCaseId && (
+              <Popup
+                key={c._id}
+                latitude={c.latitude}
+                longitude={c.longitude}
+                closeButton={true}
+                closeOnClick={false}
+                onClose={() => setCurrentCaseId(null)}
+                anchor="left"
+              >
+                <div className="card">
+                  <label>Temperature</label>
+                  <h4 className="place">{c.temperature}</h4>
+                  <label>Severity</label>
+                  <p className="desc"><b>{c.severity}</b></p>
+                  <label>Created by</label>
+                  <span className="username">
+                    {c.email}
+                  </span>
+                  <span className="date">{format(c.createdAt)}</span>
+                </div>
+              </Popup>
+            )}
+          </>
+        ))}
+        {newCase && (
+          <>
+            <Marker
+              latitude={newCase.latitude}
+              longitude={newCase.longitude}
+              offsetLeft={-3.5 * viewState.zoom}
+              offsetTop={-7 * viewState.zoom}
+            >
+              <Room
+                style={{
+                  fontSize: 7 * viewState.zoom,
+                  color: "tomato",
                   cursor: "pointer",
                 }}
               />
             </Marker>
-          )
+            <Popup
+              latitude={newCase.latitude}
+              longitude={newCase.longitude}
+              closeButton={true}
+              closeOnClick={false}
+              onClose={() => setNewCase(null)}
+              anchor="left"
+            >
+              <div>
+                <form onSubmit={handleSubmit}>
+                  <label>Temperature °C</label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="50"
+                    autoFocus
+                    onChange={(e) => setTemperature(e.target.value)}
+                    value={temperature}
+                  ></input>
+                  <label>Severity</label>
+                  <select
+                    value={severity}
+                    onChange={(e) => setSeverity(e.target.value)}
+                  >
+                    <option value="Mild">Mild</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Severe">Severe</option>
+                  </select>
+                  <button type="submit" className="submitButton">
+                    Add Pin
+                  </button>
+                </form>
+              </div>
+            </Popup>
+          </>
         )}
-        <Marker longitude={30} latitude={30} anchor="bottom">
-          <Room
-            style={{
-              fontSize: 7 * zoomAmount,
-              color: "slateblue",
-              cursor: "pointer",
-            }}
-          />
-        </Marker>
-        <Popup
-          latitude={30}
-          longitude={30}
-          closeButton={true}
-          closeOnClick={false}
-          anchor="left"
-        >
-          <div className="card">
-            <label>Place</label>
-            <h4 className="place">my title</h4>
-            <label>Review</label>
-            <p className="desc">my desc</p>
-            <label>Information</label>
-            <span className="username">
-              Created by <b>Omar</b>
-            </span>
-            <span className="date">1 hour ago</span>
-          </div>
-        </Popup>
       </>
     </Map>
   );

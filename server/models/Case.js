@@ -14,7 +14,7 @@ const CaseSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    symptoms: {
+    severity: {
       type: String,
       enum: ["Mild", "Moderate", "Severe"],
       default: "Moderate",
