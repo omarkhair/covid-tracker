@@ -34,7 +34,6 @@ const CasesMap = () => {
     try {
       const response = await axios.get(`${apiOrigin}/api/case`);
       setCases(response.data);
-      console.log(response.data);
     } catch (error) {
       console.log(error);
     }
