@@ -17,12 +17,18 @@ const CasesMap = () => {
 
   const { apiOrigin } = getConfig();
   const [viewState, setViewState] = useState({
-    latitude: 50,
-    longitude: 40,
-    zoom: 5,
+    latitude: 40,
+    longitude: 30,
+    zoom: 1,
   });
   // @ts-ignore
-  const { getAccessTokenSilently, user } = useAuth0();
+  const {
+    getAccessTokenSilently,
+    user,
+    isAuthenticated,
+    loginWithRedirect,
+    logout,
+  } = useAuth0();
 
   const getCases = async () => {
     try {
@@ -35,18 +41,37 @@ const CasesMap = () => {
   };
 
   const handleMarkerClick = (id, lat, lng) => {
-    setCurrentCaseId(id);
+    setCurrentCaseId(id === currentCaseId ? null : id);
     // setViewState({ ...viewState, latitude: lat, longitude: lng });
+  };
+
+  const addMarker = (lng, lat) => {
+    setNewCase({
+      latitude: lat,
+      longitude: lng,
+    });
+    setCurrentCaseId(null);
   };
 
   const handleAddClick = (e) => {
     e.preventDefault();
     const { lng, lat } = e.lngLat;
-    setNewCase({
-      latitude: lat,
-      longitude: lng,
-    });
+    addMarker(lng, lat);
   };
+
+  
+  const pinMyLocation = () => {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const {longitude, latitude} = pos.coords;
+      setViewState({
+        latitude,
+        longitude,
+        zoom: 8,
+      });
+      addMarker(longitude, latitude);
+    });
+  }
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,13 +104,14 @@ const CasesMap = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });      
-      setCases([...cases.filter((cur)=>cur._id !== id)]);
+      });
+      setCases([...cases.filter((cur) => cur._id !== id)]);
       setCurrentCaseId(null);
     } catch (err) {
       console.log(err);
     }
   };
+
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -99,124 +125,157 @@ const CasesMap = () => {
   }, []);
 
   return (
-    <Map
-      initialViewState={viewState}
-      onZoom={(e) => {
-        setViewState(e.viewState);
-      }}
-      onMove={(e) => {
-        setViewState(e.viewState);
-      }}
-      viewState={viewState}
-      mapboxAccessToken={process.env.REACT_APP_MAPBOX}
-      style={{ width: "70vw", height: "65vh" }}
-      mapStyle="mapbox://styles/mapbox/streets-v9"
-      onDblClick={user?.email && handleAddClick}
-    >
-      <>
-        {cases.map((c) => (
-          <>
-            <Marker
-              // @ts-ignore
-              longitude={c.longitude}
-              // @ts-ignore
-              latitude={c.latitude}
-              anchor="bottom"
-              // @ts-ignore
-            >
-              <Room
-                style={{
-                  fontSize: 7 * viewState.zoom,
-                  color: user?.email === c.email ? "tomato" : "slateblue",
-                  cursor: "pointer",
-                }}
-                onClick={() =>
-                  handleMarkerClick(c._id, c.latitude, c.longitude)
-                }
-              />
-            </Marker>
-            {c._id === currentCaseId && (
-              <Popup
-                key={c._id}
-                latitude={c.latitude}
+    <div style={{ height: "100vh", width: "100%" }}>
+      <Map
+        initialViewState={viewState}
+        onZoom={(e) => {
+          setViewState(e.viewState);
+        }}
+        onMove={(e) => {
+          setViewState(e.viewState);
+        }}
+        viewState={viewState}
+        mapboxAccessToken={process.env.REACT_APP_MAPBOX}
+        style={{ width: "100%", height: "100%" }}
+        mapStyle="mapbox://styles/mapbox/streets-v9"
+        onDblClick={isAuthenticated && handleAddClick}
+      >
+        <>
+          {cases.map((c) => (
+            <>
+              <Marker
+                // @ts-ignore
                 longitude={c.longitude}
+                // @ts-ignore
+                latitude={c.latitude}
+                anchor="bottom"
+                // @ts-ignore
+              >
+                <Room
+                  style={{
+                    fontSize: 7 * viewState.zoom,
+                    color: user?.email === c.email ? "tomato" : "slateblue",
+                    cursor: "pointer",
+                  }}
+                  onClick={() =>
+                    handleMarkerClick(c._id, c.latitude, c.longitude)
+                  }
+                />
+              </Marker>
+              {c._id === currentCaseId && (
+                <Popup
+                  key={c._id}
+                  latitude={c.latitude}
+                  longitude={c.longitude}
+                  closeButton={true}
+                  closeOnClick={false}
+                  onClose={() => setCurrentCaseId(null)}
+                  anchor="left"
+                >
+                  <div className="card">
+                    <label>Temperature</label>
+                    <h4 className="place">{c.temperature}</h4>
+                    <label>Severity</label>
+                    <p className="desc">{c.severity}</p>
+                    <label>Created by</label>
+                    <span className="username">{c.email}</span>
+                    <span className="date">{format(c.createdAt)}</span>
+                    {isAuthenticated && user?.email === c.email && (
+                      <button
+                        className="submitButton"
+                        onClick={() => removeCase(c._id)}
+                        autoFocus={false}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </Popup>
+              )}
+            </>
+          ))}
+          {newCase && (
+            <>
+              <Marker
+                latitude={newCase.latitude}
+                longitude={newCase.longitude}
+                anchor="bottom"
+              >
+                <Room
+                  style={{
+                    fontSize: 7 * viewState.zoom,
+                    color: "tomato",
+                    cursor: "pointer",
+                  }}
+                />
+              </Marker>
+              <Popup
+                latitude={newCase.latitude}
+                longitude={newCase.longitude}
                 closeButton={true}
                 closeOnClick={false}
-                onClose={() => setCurrentCaseId(null)}
+                onClose={() => setNewCase(null)}
                 anchor="left"
               >
-                <div className="card">
-                  <label>Temperature</label>
-                  <h4 className="place">{c.temperature}</h4>
-                  <label>Severity</label>
-                  <p className="desc">
-                    <b>{c.severity}</b>
-                  </p>
-                  <label>Created by</label>
-                  <span className="username">{c.email}</span>
-                  <span className="date">{format(c.createdAt)}</span>
-                {user?.email === c.email && (
-                  <button className="submitButton" onClick={()=>removeCase(c._id)}>
-                    Delete
-                  </button>
-                )}
+                <div>
+                  <form onSubmit={handleSubmit}>
+                    <label>Temperature °C</label>
+                    <input
+                      type="number"
+                      min="30"
+                      max="50"
+                      autoFocus
+                      onChange={(e) => setTemperature(e.target.value)}
+                      value={temperature}
+                    ></input>
+                    <label>Severity</label>
+                    <select
+                      value={severity}
+                      onChange={(e) => setSeverity(e.target.value)}
+                    >
+                      <option value="Mild">Mild</option>
+                      <option value="Moderate">Moderate</option>
+                      <option value="Severe">Severe</option>
+                    </select>
+                    <button type="submit" className="submitButton">
+                      Add Pin
+                    </button>
+                  </form>
                 </div>
               </Popup>
-            )}
-          </>
-        ))}
-        {newCase && (
-          <>
-            <Marker
-              latitude={newCase.latitude}
-              longitude={newCase.longitude}
-            >
-              <Room
-                style={{
-                  fontSize: 7 * viewState.zoom,
-                  color: "tomato",
-                  cursor: "pointer",
-                }}
-              />
-            </Marker>
-            <Popup
-              latitude={newCase.latitude}
-              longitude={newCase.longitude}
-              closeButton={true}
-              closeOnClick={false}
-              onClose={() => setNewCase(null)}
-              anchor="left"
-            >
-              <div>
-                <form onSubmit={handleSubmit}>
-                  <label>Temperature °C</label>
-                  <input
-                    type="number"
-                    min="30"
-                    max="50"
-                    autoFocus
-                    onChange={(e) => setTemperature(e.target.value)}
-                    value={temperature}
-                  ></input>
-                  <label>Severity</label>
-                  <select
-                    value={severity}
-                    onChange={(e) => setSeverity(e.target.value)}
-                  >
-                    <option value="Mild">Mild</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Severe">Severe</option>
-                  </select>
-                  <button type="submit" className="submitButton">
-                    Add Pin
-                  </button>
-                </form>
+            </>
+          )}
+          {isAuthenticated ? (
+            <>
+              <div className="buttons">
+                <button className="button locateme" onClick={pinMyLocation}>
+                  Locate me
+                </button>
+                <button className="button logout" onClick={logout}>
+                  Log out
+                </button>
               </div>
-            </Popup>
-          </>
-        )}
-      </>
-    </Map>
+              <div className="info message">
+                <p>
+                  <strong>Double click</strong> on map to add a new covid case
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <button className="button login" onClick={loginWithRedirect}>
+                Log in
+              </button>
+              <div className="info message">
+                <p>
+                  <strong>Login</strong> to add new covid cases
+                </p>
+              </div>
+            </>
+          )}
+        </>
+      </Map>
+    </div>
   );
 };
 export default CasesMap;
