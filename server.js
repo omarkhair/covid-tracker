@@ -4,18 +4,15 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
 const helmet = require("helmet");
-const authConfig = require("../src/auth_config.json");
+const authConfig = require("./client/src/auth_config.json");
 const checkJwt = require("./authentication/authenticate");
-
+const caseRoutes = require("./api/case");
+const path = require("path");
 
 const app = express();
 dotenv.config()
 
-const port = process.env.API_PORT || 3001;
-const appPort = process.env.SERVER_PORT || 3000;
-// @ts-ignore
-const appOrigin = authConfig.appOrigin || `http://localhost:${appPort}`;
-
+const port = process.env.PORT || 3000;
 
 // Connect to Database
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -30,10 +27,8 @@ app.use(express.json());
 app.use(morgan("dev"));
 // @ts-ignore
 app.use(helmet());
-app.use(cors({ origin: appOrigin }));
 
 
-const caseRoutes = require("./api/case");
 app.use("/api/case", caseRoutes);
 
 app.get("/api/external", checkJwt, (req, res) => {
@@ -42,6 +37,16 @@ app.get("/api/external", checkJwt, (req, res) => {
     // @ts-ignore
     user: req.user
   });
+});
+
+app.use(express.static(path.join(__dirname, "./client/build")));
+app.get("*", function (_, res) {
+  res.sendFile(
+    path.join(__dirname, "./client/build/index.html"),
+    function (err) {
+      res.status(500).send(err);
+    }
+  );
 });
 
 app.listen(port, () => console.log(`API Server listening on port ${port}`));

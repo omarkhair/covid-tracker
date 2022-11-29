@@ -1,21 +1,28 @@
 {
-  "name": "auth0-react-sample",
-  "version": "0.1.0",
-  "private": true,
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "api-server.js",
   "scripts": {
-    "start": "npm-run-all --parallel spa api-server",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "node server.js",
     "spa": "react-scripts start",
-    "server": "node server.js",
     "server:dev": "nodemon server.js",
-    "api-server": "node ./server/api-server.js",
-    "api-server:dev": "nodemon ./server/api-server.js",
-    "dev": "npm-run-all --parallel spa api-server:dev",
-    "prod": "npm-run-all --parallel server api-server"
+    "dev": "npm-run-all --parallel spa server:dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "author": "",
+  "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-jwt": "^6.1.2",
+    "helmet": "^6.0.0",
+    "jwks-rsa": "^3.0.0",
+    "mongoose": "^6.7.2",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
     "@auth0/auth0-react": "^1.12.0",
     "@material-ui/icons": "^4.11.3",
     "axios": "^1.2.0",
@@ -33,24 +40,7 @@
     "react-router-dom": "^5.3.4",
     "react-scripts": "^5.0.1",
     "timeago.js": "^4.0.2",
-    "typescript": "^4.8.3"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0"
-  },
-  "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "typescript": "^4.8.3",
+    "nodemon": "^2.0.20"
   }
 }

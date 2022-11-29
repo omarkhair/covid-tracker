@@ -15,7 +15,8 @@ const CasesMap = () => {
   const [temperature, setTemperature] = useState(37);
   const [severity, setSeverity] = useState("Moderate");
 
-  const { apiOrigin } = getConfig();
+  // const { apiOrigin } = getConfig();
+  const apiOrigin = "";
   const [viewState, setViewState] = useState({
     latitude: 40,
     longitude: 30,
