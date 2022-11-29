@@ -4,7 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
 const helmet = require("helmet");
-const authConfig = require("../auth_config.json");
+const authConfig = require("../src/auth_config.json");
 const checkJwt = require("./authentication/authenticate");
 const path = require('path')
 
