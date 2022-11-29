@@ -6,7 +6,6 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const authConfig = require("../src/auth_config.json");
 const checkJwt = require("./authentication/authenticate");
-const path = require('path')
 
 
 const app = express();
